@@ -66,10 +66,28 @@ def parse_args() -> argparse.Namespace:
         help="Hide (cx,cy) text labels; center dot remains visible",
     )
     parser.add_argument(
+        "--show-conf",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="Show detection confidence on each bounding box (default: on)",
+    )
+    parser.add_argument(
+        "--show-coords",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="Show (cx,cy) text labels on each track (default: on)",
+    )
+    parser.add_argument(
         "--conf",
         type=float,
-        default=0.25,
+        default=0.5,
         help="Detection confidence threshold (default: 0.25)",
+    )
+    parser.add_argument(
+        "--iou",
+        type=float,
+        default=0.35,
+        help="NMS IoU threshold (default: 0.35)",
     )
     parser.add_argument(
         "--save-frame",
@@ -109,9 +127,11 @@ def main() -> None:
         tracker_yaml=tracker_yaml,
         reid_model=args.reid_model,
         conf=args.conf,
+        iou=args.iou,
     )
 
-    show_coords = not args.no_coords
+    show_coords = args.show_coords and not args.no_coords
+    show_conf = args.show_conf
     save_frame = args.save_frame
     frame_count = 0
     frames_dir = ROOT / "frame_saved" / source.stem
@@ -131,7 +151,9 @@ def main() -> None:
                 break
 
             tracks = tracker.track_frame(frame)
-            annotated = draw_tracks(frame, tracks, show_coords=show_coords)
+            annotated = draw_tracks(
+                frame, tracks, show_coords=show_coords, show_conf=show_conf
+            )
             frame_num = frame_count + 1
             cv2.putText(
                 annotated,

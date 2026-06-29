@@ -18,8 +18,10 @@ class PlayerTracker:
         tracker_yaml: str | Path,
         reid_model: str = "auto",
         conf: float = 0.25,
+        iou: float = 0.35,
     ) -> None:
         self.conf = conf
+        self.iou = iou
         self.tracker_config = self._prepare_tracker_config(
             Path(tracker_yaml), reid_model
         )
@@ -47,6 +49,7 @@ class PlayerTracker:
             persist=True,
             tracker=self.tracker_config,
             conf=self.conf,
+            iou=self.iou,
             verbose=False,
         )
 

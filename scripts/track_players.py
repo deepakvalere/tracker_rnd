@@ -71,6 +71,11 @@ def parse_args() -> argparse.Namespace:
         default=0.25,
         help="Detection confidence threshold (default: 0.25)",
     )
+    parser.add_argument(
+        "--save-frame",
+        action="store_true",
+        help="Save annotated frames to frame_saved/<video>/frameN.jpg",
+    )
     return parser.parse_args()
 
 
@@ -107,7 +112,11 @@ def main() -> None:
     )
 
     show_coords = not args.no_coords
+    save_frame = args.save_frame
     frame_count = 0
+    frames_dir = ROOT / "frame_saved" / source.stem
+    if save_frame:
+        frames_dir.mkdir(parents=True, exist_ok=True)
 
     print("--- Player Tracking (YOLO + BoT-SORT ReID) ---")
     print(f"Source: {source.name}")
@@ -123,10 +132,23 @@ def main() -> None:
 
             tracks = tracker.track_frame(frame)
             annotated = draw_tracks(frame, tracks, show_coords=show_coords)
+            frame_num = frame_count + 1
+            cv2.putText(
+                annotated,
+                str(frame_num),
+                (10, 30),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                1.0,
+                (255, 255, 255),
+                2,
+                cv2.LINE_AA,
+            )
+            if save_frame:
+                cv2.imwrite(str(frames_dir / f"frame{frame_num}.jpg"), annotated)
             writer.write(annotated)
             frame_count += 1
 
-            if frame_count % 100 == 0:
+            if frame_count % 10 == 0:
                 print(f"Processed {frame_count} frames...")
 
             if viewer.show(annotated):

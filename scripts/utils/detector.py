@@ -69,12 +69,28 @@ class PlayerTracker:
         for track_id, xyxy, score, cls_id in zip(
             ids, xyxy_list, confs, classes
         ):
+            x1, y1, x2, y2 = (float(v) for v in xyxy)
+            width = x2 - x1
+            height = y2 - y1
+            cx = (x1 + x2) / 2
+            cy = (y1 + y2) / 2
+            cls_int = int(cls_id)
             tracks.append(
                 {
                     "track_id": int(track_id),
-                    "xyxy": [float(v) for v in xyxy],
+                    "xyxy": [x1, y1, x2, y2],
+                    "x1": x1,
+                    "y1": y1,
+                    "x2": x2,
+                    "y2": y2,
+                    "cx": cx,
+                    "cy": cy,
+                    "width": width,
+                    "height": height,
+                    "area": width * height,
                     "conf": float(score),
-                    "cls": int(cls_id),
+                    "cls": cls_int,
+                    "cls_name": self.model.names.get(cls_int, str(cls_int)),
                 }
             )
 

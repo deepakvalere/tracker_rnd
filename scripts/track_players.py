@@ -4,8 +4,10 @@
 from __future__ import annotations
 
 import argparse
+import json
 import sys
 from pathlib import Path
+from typing import Any
 
 import cv2
 
@@ -24,6 +26,28 @@ from scripts.utils.paths import (
 )
 from scripts.utils.video_io import LiveViewer, create_writer, open_capture
 from scripts.utils.visualizer import draw_tracks
+
+
+def _track_for_json(track: dict[str, Any], frame_w: int, frame_h: int) -> dict[str, Any]:
+    cx, cy = track["cx"], track["cy"]
+    w, h = track["width"], track["height"]
+    return {
+        **track,
+        "cx_int": int(round(cx)),
+        "cy_int": int(round(cy)),
+        "xywh": [cx, cy, w, h],
+        "cx_norm": round(cx / frame_w, 6) if frame_w else None,
+        "cy_norm": round(cy / frame_h, 6) if frame_h else None,
+        "width_norm": round(w / frame_w, 6) if frame_w else None,
+        "height_norm": round(h / frame_h, 6) if frame_h else None,
+        "x1_norm": round(track["x1"] / frame_w, 6) if frame_w else None,
+        "y1_norm": round(track["y1"] / frame_h, 6) if frame_h else None,
+        "x2_norm": round(track["x2"] / frame_w, 6) if frame_w else None,
+        "y2_norm": round(track["y2"] / frame_h, 6) if frame_h else None,
+        "area_norm": round(track["area"] / (frame_w * frame_h), 6)
+        if frame_w and frame_h
+        else None,
+    }
 
 
 def parse_args() -> argparse.Namespace:
@@ -119,8 +143,10 @@ def main() -> None:
     size = (width, height)
 
     output_path = output_dir / f"{source.stem}_tracked.mp4"
+    details_path = output_dir / f"{source.stem}_details.json"
     writer = create_writer(output_path, fps, size)
     viewer = LiveViewer(enabled=args.show)
+    frame_records: list[dict[str, Any]] = []
 
     tracker = PlayerTracker(
         model_path=model_path,
@@ -141,8 +167,9 @@ def main() -> None:
     print("--- Player Tracking (YOLO + BoT-SORT ReID) ---")
     print(f"Source: {source.name}")
     print(f"Model:  {model_path.name}")
-    print(f"Output: {output_path}")
-    print(f"Live:   {'on (ESC/q to stop)' if args.show else 'off'}")
+    print(f"Output:  {output_path}")
+    print(f"Details: {details_path}")
+    print(f"Live:    {'on (ESC/q to stop)' if args.show else 'off'}")
 
     try:
         while cap.isOpened():
@@ -151,6 +178,17 @@ def main() -> None:
                 break
 
             tracks = tracker.track_frame(frame)
+            frame_records.append(
+                {
+                    "frame_index": frame_count,
+                    "frame_number": frame_count + 1,
+                    "timestamp_sec": round(frame_count / fps, 6),
+                    "num_tracks": len(tracks),
+                    "tracks": [
+                        _track_for_json(track, width, height) for track in tracks
+                    ],
+                }
+            )
             annotated = draw_tracks(
                 frame, tracks, show_coords=show_coords, show_conf=show_conf
             )
@@ -181,7 +219,26 @@ def main() -> None:
         writer.release()
         viewer.close()
 
+    details = {
+        "source": str(source),
+        "video_name": source.name,
+        "video_stem": source.stem,
+        "fps": fps,
+        "width": width,
+        "height": height,
+        "model": str(model_path),
+        "tracker": str(tracker_yaml),
+        "reid_model": args.reid_model,
+        "conf_threshold": args.conf,
+        "iou_threshold": args.iou,
+        "total_frames": frame_count,
+        "frames": frame_records,
+    }
+    with details_path.open("w", encoding="utf-8") as f:
+        json.dump(details, f, indent=2)
+
     print(f"Done. Wrote {frame_count} frames to {output_path}")
+    print(f"Saved tracking details to {details_path}")
 
 
 if __name__ == "__main__":

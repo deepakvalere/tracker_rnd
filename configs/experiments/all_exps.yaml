@@ -1,0 +1,30 @@
+experiments:
+  - id: exp_a
+    name: baseline
+    tracker: configs/experiments/exp_a_baseline.yaml
+    conf: 0.25
+
+  - id: exp_b
+    name: tuned_full
+    tracker: configs/experiments/exp_b_tuned_full.yaml
+    conf: 0.42
+
+  - id: exp_c
+    name: proximity
+    tracker: configs/experiments/exp_c_proximity.yaml
+    conf: 0.25
+
+  - id: exp_d
+    name: new_track
+    tracker: configs/experiments/exp_d_new_track.yaml
+    conf: 0.25
+
+  - id: exp_e
+    name: buffer
+    tracker: configs/experiments/exp_e_buffer.yaml
+    conf: 0.25
+
+  - id: exp_f
+    name: appearance
+    tracker: configs/experiments/exp_f_appearance.yaml
+    conf: 0.25

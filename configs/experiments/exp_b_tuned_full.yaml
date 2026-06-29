@@ -1,0 +1,14 @@
+# Experiment B: combined recommended tuning profile
+
+tracker_type: botsort
+track_high_thresh: 0.42
+track_low_thresh: 0.12
+new_track_thresh: 0.50
+track_buffer: 55
+match_thresh: 0.75
+fuse_score: true
+gmc_method: sparseOptFlow
+proximity_thresh: 0.32
+appearance_thresh: 0.72
+with_reid: true
+model: auto

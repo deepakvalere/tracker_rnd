@@ -1,0 +1,14 @@
+# Experiment E: isolate longer track_buffer (occlusion recovery)
+
+tracker_type: botsort
+track_high_thresh: 0.25
+track_low_thresh: 0.1
+new_track_thresh: 0.25
+track_buffer: 55
+match_thresh: 0.8
+fuse_score: true
+gmc_method: sparseOptFlow
+proximity_thresh: 0.5
+appearance_thresh: 0.8
+with_reid: true
+model: auto

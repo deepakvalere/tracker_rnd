@@ -50,6 +50,44 @@ def _track_for_json(track: dict[str, Any], frame_w: int, frame_h: int) -> dict[s
     }
 
 
+def _build_details(
+    *,
+    source: Path,
+    fps: float,
+    width: int,
+    height: int,
+    model_path: Path,
+    tracker_yaml: Path,
+    reid_model: str,
+    conf: float,
+    iou: float,
+    frame_count: int,
+    frame_records: list[dict[str, Any]],
+) -> dict[str, Any]:
+    return {
+        "source": str(source),
+        "video_name": source.name,
+        "video_stem": source.stem,
+        "fps": fps,
+        "width": width,
+        "height": height,
+        "model": str(model_path),
+        "tracker": str(tracker_yaml),
+        "reid_model": reid_model,
+        "conf_threshold": conf,
+        "iou_threshold": iou,
+        "total_frames": frame_count,
+        "frames": frame_records,
+    }
+
+
+def _save_details(path: Path, details: dict[str, Any]) -> None:
+    tmp_path = path.with_name(path.name + ".tmp")
+    with tmp_path.open("w", encoding="utf-8") as f:
+        json.dump(details, f, indent=2)
+    tmp_path.replace(path)
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Track players using YOLO detection and BoT-SORT with ReID."
@@ -116,7 +154,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--save-frame",
         action="store_true",
-        help="Save annotated frames to frame_saved/<video>/frameN.jpg",
+        help="Save annotated frames to frame_saved/<video>/ or --frames-dir",
+    )
+    parser.add_argument(
+        "--frames-dir",
+        default=None,
+        help="Directory for saved frames when --save-frame is set (default: frame_saved/<video>/)",
     )
     parser.add_argument(
         "--no-video",
@@ -166,9 +209,15 @@ def main() -> None:
     show_conf = args.show_conf
     save_frame = args.save_frame
     frame_count = 0
-    frames_dir = ROOT / "frame_saved" / source.stem
     if save_frame:
+        frames_dir = (
+            resolve_path(args.frames_dir)
+            if args.frames_dir
+            else ROOT / "frame_saved" / source.stem
+        )
         frames_dir.mkdir(parents=True, exist_ok=True)
+    else:
+        frames_dir = None
 
     print("--- Player Tracking (YOLO + BoT-SORT ReID) ---")
     print(f"Source: {source.name}")
@@ -176,6 +225,24 @@ def main() -> None:
     print(f"Output:  {output_path if write_video else '(video skipped)'}")
     print(f"Details: {details_path}")
     print(f"Live:    {'on (ESC/q to stop)' if args.show else 'off'}")
+
+    def save_progress() -> None:
+        _save_details(
+            details_path,
+            _build_details(
+                source=source,
+                fps=fps,
+                width=width,
+                height=height,
+                model_path=model_path,
+                tracker_yaml=tracker_yaml,
+                reid_model=args.reid_model,
+                conf=args.conf,
+                iou=args.iou,
+                frame_count=frame_count,
+                frame_records=frame_records,
+            ),
+        )
 
     try:
         while cap.isOpened():
@@ -209,11 +276,12 @@ def main() -> None:
                 2,
                 cv2.LINE_AA,
             )
-            if save_frame:
+            if save_frame and frames_dir is not None:
                 cv2.imwrite(str(frames_dir / f"frame{frame_num}.jpg"), annotated)
             if writer is not None:
                 writer.write(annotated)
             frame_count += 1
+            save_progress()
 
             if frame_count % 10 == 0:
                 print(f"Processed {frame_count} frames...")
@@ -226,24 +294,7 @@ def main() -> None:
         if writer is not None:
             writer.release()
         viewer.close()
-
-    details = {
-        "source": str(source),
-        "video_name": source.name,
-        "video_stem": source.stem,
-        "fps": fps,
-        "width": width,
-        "height": height,
-        "model": str(model_path),
-        "tracker": str(tracker_yaml),
-        "reid_model": args.reid_model,
-        "conf_threshold": args.conf,
-        "iou_threshold": args.iou,
-        "total_frames": frame_count,
-        "frames": frame_records,
-    }
-    with details_path.open("w", encoding="utf-8") as f:
-        json.dump(details, f, indent=2)
+        save_progress()
 
     if write_video:
         print(f"Done. Wrote {frame_count} frames to {output_path}")

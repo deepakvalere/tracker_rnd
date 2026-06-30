@@ -5,7 +5,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import shutil
 import subprocess
 import sys
 from datetime import datetime, timezone
@@ -78,6 +77,12 @@ def parse_args() -> argparse.Namespace:
         default=0.35,
         help="NMS IoU threshold passed to track_players (default: 0.35)",
     )
+    parser.add_argument(
+        "--save-frame",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="Save annotated frames to each experiment images/ folder (default: on)",
+    )
     return parser.parse_args()
 
 
@@ -95,17 +100,10 @@ def load_tracker_config(path: Path) -> dict[str, Any]:
         return yaml.safe_load(f) or {}
 
 
-def relocate_frames(source_dir: Path, dest_dir: Path) -> int:
-    dest_dir.mkdir(parents=True, exist_ok=True)
-    if not source_dir.exists():
+def count_saved_frames(images_dir: Path) -> int:
+    if not images_dir.exists():
         return 0
-    moved = 0
-    for frame_path in sorted(source_dir.glob("*.jpg")):
-        shutil.move(str(frame_path), str(dest_dir / frame_path.name))
-        moved += 1
-    if source_dir.exists() and not any(source_dir.iterdir()):
-        source_dir.rmdir()
-    return moved
+    return sum(1 for _ in images_dir.glob("*.jpg"))
 
 
 def run_single_experiment(
@@ -116,6 +114,7 @@ def run_single_experiment(
     reid_model: str,
     output_root: Path,
     result_video: bool,
+    save_frame: bool,
     iou: float,
 ) -> dict[str, Any]:
     exp_id = exp["id"]
@@ -132,7 +131,6 @@ def run_single_experiment(
     details_path = exp_dir / f"{video_stem}_details.json"
     video_path = exp_dir / f"{video_stem}_tracked.mp4"
     meta_path = exp_dir / "experiment_meta.json"
-    frames_src = PROJECT_ROOT / "frame_saved" / video_stem
 
     cmd = [
         sys.executable,
@@ -151,10 +149,11 @@ def run_single_experiment(
         str(conf),
         "--iou",
         str(iou),
-        "--save-frame",
         "--no-show-conf",
         "--no-show-coords",
     ]
+    if save_frame:
+        cmd.extend(["--save-frame", "--frames-dir", str(images_dir)])
 
     if not result_video:
         cmd.append("--no-video")
@@ -173,11 +172,12 @@ def run_single_experiment(
     status = "success" if proc.returncode == 0 else "failed"
     error = None if proc.returncode == 0 else f"track_players exited with code {proc.returncode}"
 
-    frames_moved = 0
+    frames_saved = 0
     video_kept = False
 
     if status == "success":
-        frames_moved = relocate_frames(frames_src, images_dir)
+        if save_frame:
+            frames_saved = count_saved_frames(images_dir)
         if result_video and video_path.exists():
             video_kept = True
         elif not result_video and video_path.exists():
@@ -200,13 +200,14 @@ def run_single_experiment(
         "conf": conf,
         "iou": iou,
         "result_video": result_video,
+        "save_frame": save_frame,
         "paths": {
             "experiment_dir": str(exp_dir),
             "details_json": str(details_path) if details_path.exists() else None,
             "video": str(video_path) if video_kept else None,
             "images_dir": str(images_dir),
         },
-        "frames_saved": frames_moved,
+        "frames_saved": frames_saved,
     }
 
     with meta_path.open("w", encoding="utf-8") as f:
@@ -215,7 +216,7 @@ def run_single_experiment(
     print(f"Status: {status}")
     if status == "success":
         print(f"Details: {details_path.name}" + (" (ok)" if details_path.exists() else " (missing)"))
-        print(f"Images:  {frames_moved} frames -> {images_dir}")
+        print(f"Images:  {frames_saved} frames -> {images_dir}")
         print(f"Video:   {'kept' if video_kept else 'skipped/deleted'}")
     else:
         print(f"Error:   {error}")
@@ -264,6 +265,7 @@ def main() -> None:
     print(f"Source:   {source.name}")
     print(f"Runs:     {len(experiments)} experiment(s)")
     print(f"Video:    {'keep' if args.result_video else 'discard after run'}")
+    print(f"Frames:   {'save' if args.save_frame else 'skip'}")
 
     results: list[dict[str, Any]] = []
     for exp in experiments:
@@ -275,6 +277,7 @@ def main() -> None:
                 reid_model=args.reid_model,
                 output_root=output_root,
                 result_video=args.result_video,
+                save_frame=args.save_frame,
                 iou=args.iou,
             )
         except Exception as exc:

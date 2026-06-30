@@ -118,6 +118,11 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="Save annotated frames to frame_saved/<video>/frameN.jpg",
     )
+    parser.add_argument(
+        "--no-video",
+        action="store_true",
+        help="Skip writing the annotated output video",
+    )
     return parser.parse_args()
 
 
@@ -144,7 +149,8 @@ def main() -> None:
 
     output_path = output_dir / f"{source.stem}_tracked.mp4"
     details_path = output_dir / f"{source.stem}_details.json"
-    writer = create_writer(output_path, fps, size)
+    write_video = not args.no_video
+    writer = create_writer(output_path, fps, size) if write_video else None
     viewer = LiveViewer(enabled=args.show)
     frame_records: list[dict[str, Any]] = []
 
@@ -167,7 +173,7 @@ def main() -> None:
     print("--- Player Tracking (YOLO + BoT-SORT ReID) ---")
     print(f"Source: {source.name}")
     print(f"Model:  {model_path.name}")
-    print(f"Output:  {output_path}")
+    print(f"Output:  {output_path if write_video else '(video skipped)'}")
     print(f"Details: {details_path}")
     print(f"Live:    {'on (ESC/q to stop)' if args.show else 'off'}")
 
@@ -205,7 +211,8 @@ def main() -> None:
             )
             if save_frame:
                 cv2.imwrite(str(frames_dir / f"frame{frame_num}.jpg"), annotated)
-            writer.write(annotated)
+            if writer is not None:
+                writer.write(annotated)
             frame_count += 1
 
             if frame_count % 10 == 0:
@@ -216,7 +223,8 @@ def main() -> None:
                 break
     finally:
         cap.release()
-        writer.release()
+        if writer is not None:
+            writer.release()
         viewer.close()
 
     details = {
@@ -237,7 +245,10 @@ def main() -> None:
     with details_path.open("w", encoding="utf-8") as f:
         json.dump(details, f, indent=2)
 
-    print(f"Done. Wrote {frame_count} frames to {output_path}")
+    if write_video:
+        print(f"Done. Wrote {frame_count} frames to {output_path}")
+    else:
+        print(f"Done. Processed {frame_count} frames (video skipped)")
     print(f"Saved tracking details to {details_path}")
 
 

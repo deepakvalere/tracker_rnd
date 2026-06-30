@@ -156,6 +156,11 @@ def run_single_experiment(
         "--no-show-coords",
     ]
 
+    if not result_video:
+        cmd.append("--no-video")
+        if video_path.exists():
+            video_path.unlink()
+
     print(f"\n{'=' * 60}")
     print(f"Experiment {exp_id} ({exp_name})")
     print(f"Tracker: {tracker_yaml.name}  conf={conf}")
@@ -175,7 +180,7 @@ def run_single_experiment(
         frames_moved = relocate_frames(frames_src, images_dir)
         if result_video and video_path.exists():
             video_kept = True
-        elif video_path.exists():
+        elif not result_video and video_path.exists():
             video_path.unlink()
 
     tracker_config = load_tracker_config(tracker_yaml)

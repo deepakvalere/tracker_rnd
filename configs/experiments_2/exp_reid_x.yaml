@@ -1,3 +1,5 @@
+# Experiment 2: exp_a tracker settings, YOLO26x ReID encoder
+
 tracker_type: botsort
 track_high_thresh: 0.25
 track_low_thresh: 0.1

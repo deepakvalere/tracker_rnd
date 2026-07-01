@@ -18,7 +18,10 @@ __pycache__/
 *.py[cod]
 *$py.class
 *.pyc
-
+*.onnx
+*.pth
+*.pt
+*.engine
 
 *.log
 jersey_image/

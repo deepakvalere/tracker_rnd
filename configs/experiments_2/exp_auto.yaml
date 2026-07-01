@@ -1,3 +1,5 @@
+# Experiment 2 baseline: exp_a tracker settings, ReID model auto (native YOLO features)
+
 tracker_type: botsort
 track_high_thresh: 0.25
 track_low_thresh: 0.1
@@ -9,4 +11,4 @@ gmc_method: sparseOptFlow
 proximity_thresh: 0.5
 appearance_thresh: 0.8
 with_reid: true
-model: yolo26x-reid.onnx
+model: auto

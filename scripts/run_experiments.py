@@ -132,6 +132,9 @@ def run_single_experiment(
     video_path = exp_dir / f"{video_stem}_tracked.mp4"
     meta_path = exp_dir / "experiment_meta.json"
 
+    tracker_config = load_tracker_config(tracker_yaml)
+    exp_reid_model = exp.get("reid_model") or tracker_config.get("model") or reid_model
+
     cmd = [
         sys.executable,
         str(TRACK_SCRIPT),
@@ -142,7 +145,7 @@ def run_single_experiment(
         "--tracker",
         str(tracker_yaml),
         "--reid-model",
-        reid_model,
+        exp_reid_model,
         "--output-dir",
         str(exp_dir),
         "--conf",
@@ -162,7 +165,7 @@ def run_single_experiment(
 
     print(f"\n{'=' * 60}")
     print(f"Experiment {exp_id} ({exp_name})")
-    print(f"Tracker: {tracker_yaml.name}  conf={conf}")
+    print(f"Tracker: {tracker_yaml.name}  conf={conf}  reid={exp_reid_model}")
     print(f"Output:  {exp_dir}")
     print(f"{'=' * 60}")
 
@@ -183,7 +186,6 @@ def run_single_experiment(
         elif not result_video and video_path.exists():
             video_path.unlink()
 
-    tracker_config = load_tracker_config(tracker_yaml)
     meta = {
         "experiment_id": exp_id,
         "experiment_name": exp_name,
@@ -196,7 +198,7 @@ def run_single_experiment(
         "model": str(model),
         "tracker_yaml": str(tracker_yaml),
         "tracker_config": tracker_config,
-        "reid_model": reid_model,
+        "reid_model": exp_reid_model,
         "conf": conf,
         "iou": iou,
         "result_video": result_video,

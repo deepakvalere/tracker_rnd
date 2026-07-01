@@ -1,0 +1,40 @@
+# Experiment suite 2: baseline tracker (exp_a), conf 0.5, sweep ReID encoder.
+#
+# Available ReID models (Ultralytics BoT-SORT, autodownload on first use):
+#   - auto              native YOLO detector features (minimal overhead)
+#   - yolo26n-reid.onnx smallest dedicated encoder
+#   - yolo26s-reid.onnx
+#   - yolo26m-reid.onnx
+#   - yolo26l-reid.onnx
+#   - yolo26x-reid.onnx largest / most discriminative
+
+experiments:
+  - id: exp_auto
+    name: reid_auto
+    tracker: configs/experiments_2/exp_auto.yaml
+    conf: 0.5
+
+  - id: exp_reid_n
+    name: reid_yolo26n
+    tracker: configs/experiments_2/exp_reid_n.yaml
+    conf: 0.5
+
+  - id: exp_reid_s
+    name: reid_yolo26s
+    tracker: configs/experiments_2/exp_reid_s.yaml
+    conf: 0.5
+
+  - id: exp_reid_m
+    name: reid_yolo26m
+    tracker: configs/experiments_2/exp_reid_m.yaml
+    conf: 0.5
+
+  - id: exp_reid_l
+    name: reid_yolo26l
+    tracker: configs/experiments_2/exp_reid_l.yaml
+    conf: 0.5
+
+  - id: exp_reid_x
+    name: reid_yolo26x
+    tracker: configs/experiments_2/exp_reid_x.yaml
+    conf: 0.5

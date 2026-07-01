@@ -1,0 +1,38 @@
+{
+  "experiment_id": "exp_auto",
+  "experiment_name": "reid_auto",
+  "status": "success",
+  "error": null,
+  "started_at": "2026-06-30T12:11:54.227087+00:00",
+  "finished_at": "2026-06-30T12:26:38.765463+00:00",
+  "source": "C:\\Users\\ATM\\Desktop\\pshi\\research\\tracker_rnd\\inputs\\vid_short.mp4",
+  "video_stem": "vid_short",
+  "model": "C:\\Users\\ATM\\Desktop\\pshi\\research\\tracker_rnd\\models\\player.pt",
+  "tracker_yaml": "C:\\Users\\ATM\\Desktop\\pshi\\research\\tracker_rnd\\configs\\experiments_2\\exp_auto.yaml",
+  "tracker_config": {
+    "tracker_type": "botsort",
+    "track_high_thresh": 0.25,
+    "track_low_thresh": 0.1,
+    "new_track_thresh": 0.25,
+    "track_buffer": 30,
+    "match_thresh": 0.8,
+    "fuse_score": true,
+    "gmc_method": "sparseOptFlow",
+    "proximity_thresh": 0.5,
+    "appearance_thresh": 0.8,
+    "with_reid": true,
+    "model": "auto"
+  },
+  "reid_model": "auto",
+  "conf": 0.5,
+  "iou": 0.35,
+  "result_video": false,
+  "save_frame": true,
+  "paths": {
+    "experiment_dir": "C:\\Users\\ATM\\Desktop\\pshi\\research\\tracker_rnd\\outputs\\experiments_2\\exp_auto",
+    "details_json": "C:\\Users\\ATM\\Desktop\\pshi\\research\\tracker_rnd\\outputs\\experiments_2\\exp_auto\\vid_short_details.json",
+    "video": null,
+    "images_dir": "C:\\Users\\ATM\\Desktop\\pshi\\research\\tracker_rnd\\outputs\\experiments_2\\exp_auto\\images"
+  },
+  "frames_saved": 1499
+}
